@@ -1,46 +1,76 @@
-# 8x8 RAM Design in Verilog
+`timescale 1ns / 1ps
 
-This repository contains the Verilog implementation of an **8×8 Random Access Memory (RAM)** module along with a testbench for simulation and verification.
+module RAM_8_8(
+input clk,
+input rst,
+input wr_en,
+input [2:0]w_addr,
+input [7:0] data_in,
+input [2:0] rd_addr,
+output reg [7:0] data_out
+);
+reg [7:0] memory[0:7];
+integer i;
 
-## Project Overview
-The project demonstrates the design and simulation of a small memory unit using Verilog HDL. The RAM consists of **8 memory locations**, each capable of storing **8-bit data**. The design supports both **read and write operations** controlled by input signals.
+always@(posedge clk or posedge rst)
+begin
+if(rst)
+for(i=0;i<8;i=i+1'b1)
+memory[i]<=8'b0000_0000;
+end
 
-## Features
-- 8 memory locations
-- Each location stores 8-bit data
-- Separate read and write functionality
-- Synchronous design using clock signal
-- Testbench included for verification
+// Memory read and Write Logic
+always@(posedge clk or posedge rst)
+begin
+if(rst)
+data_out=8'b0000_0000;
+else if(wr_en)
+memory[w_addr]=data_in;
+else
+data_out=memory[rd_addr];
+end
+endmodule
 
-## Inputs
-- `clk` – Clock signal
-- `wr_en` – Write enable signal
-- `w_addr` – 3-bit address input (selects memory location for write operation)
-- `rd_addr`-  3-bit address input (selects memory location for read operation)
-- `data_in` – 8-bit input data
+// **********Testbench to test the working of the RAM *******************///////
 
-## Output
-- `data_out` – 8-bit output data
+`timescale 1ns / 1ps
 
-## Working
-- When **write enable (wr_en = 1)**, the input data is written into the selected memory address on the clock edge.
-- When **write enable (wr_e = 0)**, the stored data from the selected address is read and provided at the output.
-
-## Tools Used
-- Verilog HDL
-- GTKWave (for waveform visualization)
-
-## Simulation
-The repository also contains a **testbench** that verifies:
-- Write operation
-- Read operation
-- Correct storage of data in memory locations
-
-## Applications
-- Basic memory design learning
-- Digital system design practice
-- VLSI design and verification projects
-
-## Author
-Vishal Yadav
-M.Tech VLSI Design
+module RAM_tb();
+reg clk,rst,wr_en;
+reg [2:0] w_addr;
+reg [2:0] rd_addr;
+reg [7:0] data_in;
+wire [7:0]data_out;
+RAM_8_8 dut(.clk(clk),.rst(rst),.wr_en(wr_en),.w_addr(w_addr),
+.data_in(data_in),.rd_addr(rd_addr),.data_out(data_out));
+initial begin
+clk=1'b0;
+forever #5 clk=~clk;
+end
+initial begin
+rst=1'b1;
+wr_en=1'b0;
+rd_addr=3'b001;
+#10 rst=1'b0;
+    wr_en=1'b1;
+    w_addr=3'b111;
+    data_in=8'b1000_1111;
+#10 w_addr=3'b000;
+    data_in=8'b0000_0000;
+#10 w_addr=3'b001;
+    data_in=8'b0000_0001;
+#10 w_addr=3'b010;
+    data_in=8'b0000_0010;
+#10 w_addr=3'b011;
+    data_in=8'b0000_1111;  
+#10 wr_en=1'b0;
+    rd_addr=3'b111;
+#10 wr_en=1'b0;
+     rd_addr=3'b001;
+#10 wr_en=1'b0;
+    rd_addr=3'b011;
+$monitor("Time=%t | wr_en=%b | rst=%b | w_addr=%b | data_in=%b | rd_addr=%b | data_out=%b",
+$time,wr_en,rst,w_addr,data_in,rd_addr,data_out);
+#100 $finish;
+end
+endmodule
